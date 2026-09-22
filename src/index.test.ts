@@ -1500,17 +1500,21 @@ const runTests = (baseopts: chokidar.ChokidarOptions) => {
         });
         options2.cwd = dpath('subdir');
         const watcher = cwatch(gpath('.'), options);
-        const watcherEvents = waitForEvents(watcher, 5);
         const spy1 = await aspy(watcher, EV.ALL);
 
         await delay();
         const watcher2 = cwatch(currentDir, options2);
-        const watcher2Events = waitForEvents(watcher2, 5);
         const spy2 = await aspy(watcher2, EV.ALL);
 
         await unlink(dpath('unlink.txt'));
         await write(dpath('change.txt'), time());
-        await Promise.all([watcherEvents, watcher2Events]);
+        // A write can emit multiple change events before unlink arrives on macOS.
+        await waitFor([
+          [spy1, 1, [EV.CHANGE, 'change.txt']],
+          [spy1, 1, [EV.UNLINK, 'unlink.txt']],
+          [spy2, 1, [EV.CHANGE, sp.join('..', 'change.txt')]],
+          [spy2, 1, [EV.UNLINK, sp.join('..', 'unlink.txt')]],
+        ]);
         ok(calledWith(spy1, [EV.CHANGE, 'change.txt']));
         ok(calledWith(spy1, [EV.UNLINK, 'unlink.txt']));
         ok(calledWith(spy2, [EV.ADD, sp.join('..', 'change.txt')]));
