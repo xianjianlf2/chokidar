@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, it } from '@paulmillr/jsbt/test.js';
 import { deepEqual, equal, ok, throws } from 'node:assert/strict';
 import { exec as cexec } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import {
   appendFile,
   mkdir as mkd,
@@ -24,7 +25,8 @@ import * as chokidar from './index.js';
 
 const TEST_TIMEOUT = 32000; // ms
 const imetaurl = import.meta.url;
-const FIXTURES_PATH = sp.join(tmpdir(), 'chokidar-' + time());
+// Windows TEMP can use an 8.3 alias that crashes libuv fs.watch (libuv/libuv#5010).
+const FIXTURES_PATH = sp.join(realpathSync.native(tmpdir()), 'chokidar-' + time());
 const WATCHERS: chokidar.FSWatcher[] = [];
 let testId = 0;
 let currentDir: string;
